@@ -25,7 +25,7 @@ function search_form_shortcode() {
     <!-- Display the Search Form -->
         <form method="post" action="">
             <?php wp_nonce_field( 'search_form', '_search_form_nonce' ); ?>
-            <input type="text" id="search-input" name="sf" value="<?php echo esc_attr( $search_term ); ?>" required>
+            <input type="text" id="search-input" aria-label="Search" name="sf" value="<?php echo esc_attr( $search_term ); ?>" required>
         <input type="submit" id="search-btn" value="Search">
     </form>
 <?php
@@ -153,6 +153,8 @@ function search_form_shortcode() {
 function search_css() {
     echo '<style type="text/css">'
         . 'h1 {
+            font-family: monospace, monospace;
+            color: #6d350eff;
             text-align: center;
             margin-bottom: 20px;
             font-size: 42px;
@@ -169,27 +171,40 @@ function search_css() {
             max-width: 80%;
         }' 
         . '#search-btn {
+            font-family: monospace, monospace;
             padding: 12px;
             font-size: 20px;
+            background-color: #B69078;
+            border: 1px solid #7B3D10;
+            box-shadow: 0px 2px 7px 1px #7B3D10;
         }' 
         . '#search-prompt {
             padding-left: 2em;
             padding-bottom: 3em;
         }'
         . ' h2 {
+            font-family: monospace, monospace;
             text-align: left;
             margin-top: 40px;
-            font-size: 24px;
+            font-size: 22px;
         }'
         . '.search-results { 
-                list-style: none; 
-                margin-left: 20px; 
+                font-family: Times new roman, serif;
+                list-style: none;
+                font-size: 20px;
+                padding-left: 0;
         }'
         . '#search-error { 
                 color: red; 
         }'
         . 'li {
-            padding-top: 1.5em;
+            padding: .5em .2em;
+        }'
+        . 'li a {
+            text-decoration-color: #7B3D10;
+        }'
+        . '.search-results li:nth-child(odd) {
+            background-color: #eee8e2ff;
         }'
     . '</style>';
 }
