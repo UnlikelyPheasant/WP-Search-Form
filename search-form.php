@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Search Form
- * Description: Search form that searches Google News RSS feed and displays results as title links and short descriptions.
+ * Description: Search form that searches Google News XML/RSS feed and displays results as title links
  * Version: 1.0.0
  * Author: Ash Burks
  * Author URI: https://unlikelypheasant.github.io/Ash.Burks.github.io/
