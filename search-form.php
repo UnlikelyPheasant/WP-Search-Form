@@ -14,11 +14,11 @@ add_action( 'wp_head', 'search_css' );
 function search_form_shortcode() {
     ob_start(); //start output buffering
 
-        // check if form was submitted
+        // check if form was submitted before attempting to process input or initialize the search term variable to an empty string.
         if ( isset( $_POST['_search_form_nonce'] ) && wp_verify_nonce( wp_unslash( $_POST['_search_form_nonce'] ), 'search_form' ) ) {
-            $search_term = sanitize_text_field( wp_unslash( $_POST['sf'] ) ); // if submitted, get and sanitize search term
+            $search_term = sanitize_text_field( wp_unslash( $_POST['sf'] ) );
         } else {
-            $search_term = ''; // otherwise, set search term to an empty string
+            $search_term = '';
         }
 ?>
 
@@ -30,64 +30,64 @@ function search_form_shortcode() {
     </form>
 <?php
 
-        // check if search term is not empty
+        // Ensure there is a search term before making the API request to avoid empty requests.
     if ( ! empty( $search_term ) ) {
         $API_url = 'https://news.google.com/rss/search?q=' . rawurlencode( $search_term ) . '&hl=en-US&gl=US&ceid=US:en';
 
-        $args = array( // add a user-agent and timeout to the request
+        $args = array( // add a user-agent and timeout to the request for better compatibility and reliability
             'timeout'    => 10,
             'user-agent' => 'Mozilla/5.0 (compatible)',
         );
 
         $results = wp_remote_get( $API_url, $args ); // make the HTTP request
 
-        if ( is_wp_error( $results ) ) { // check for errors
-            echo '<p id="search-error">Error fetching results. Please try again later.</p>'; // display error message
-        } else { // no errors
-            $code = wp_remote_retrieve_response_code( $results ); // get the request response code
-            $headers = wp_remote_retrieve_headers( $results ); // get the response headers
-            $content_type = isset( $headers['content-type'] ) ? $headers['content-type'] : ''; // get headers content-type if it is not null
+        if ( is_wp_error( $results ) ) { // check for errors, for users 
+            echo '<p id="search-error">Error fetching results. Please try again later.</p>';
+        } else { // if no errors, process the response and seperate into code, headers, and body for easier processing
+            $code = wp_remote_retrieve_response_code( $results );
+            $headers = wp_remote_retrieve_headers( $results );
+            $content_type = isset( $headers['content-type'] ) ? $headers['content-type'] : '';
 
             if ( intval( $code ) !== 200 ) { // check for a non-200 response code
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { // check for the error if debugging is enabled
-                    error_log( '[search-form] Remote responded with HTTP ' . intval( $code ) . ' for URL: ' . $API_url ); // log the error
+                    error_log( '[search-form] Remote responded with HTTP ' . intval( $code ) . ' for URL: ' . $API_url );
                 }
-                echo '<p id="search-error">Error fetching results (HTTP ' . intval( $code ) . '). Please try again later.</p>'; // display error message with error code
+                echo '<p id="search-error">Error fetching results (HTTP ' . intval( $code ) . '). Please try again later.</p>';
             } else {
-                $body = wp_remote_retrieve_body( $results ); // otherwise, get the response body
+                $body = wp_remote_retrieve_body( $results );
 
                 // remove common leading whitespace and BOM if present
                 $body = ltrim( $body ); // remove leading whitespace
                 $body = preg_replace('/^\xEF\xBB\xBF/', '', $body); // remove Byte Order Mark (BOM)
 
                 if ( empty( $body ) ) {
-                    echo '<p id="search-error">No response from remote server.</p>'; // display message if body is empty
+                    echo '<p id="search-error">No response from remote server.</p>';
                 } else {
                     libxml_use_internal_errors( true ); // suppress xml parsing errors
 
-                    $xml = simplexml_load_string( $body ); // parse the response body as xml
+                    $xml = simplexml_load_string( $body );
 
                     // If parse failed, attempt to find XML prolog or first <rss> and parse that substring.
                     if ( $xml === false ) {
-                        $xml = false; // reset xml variable
+                        $xml = false;
                         $pos = strpos( $body, '<?xml' ); // try to find xml prolog
-                        if ( $pos === false ) { // if not found
+                        if ( $pos === false ) {
                             $pos = stripos( $body, '<rss' ); // try to find <rss> tag
                         }
-                        if ( $pos !== false ) { // if found
+                        if ( $pos !== false ) {
                             $try = substr( $body, $pos ); // retrieve substring from that position
                             $xml = @simplexml_load_string( $try ); // attempt to parse that substring
                         }
 
-                        if ( $xml === false ) { // if parse still failed
-                            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { // if debugging is enabled
+                        if ( $xml === false ) { 
+                            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                                 $trunc = substr( $body, 0, 8192 ); // get first 8192 characters of body
                                 error_log( '[search-form] simplexml_load_string failed. HTTP code: ' . intval( $code ) . '; Content-Type: ' . $content_type ); // log error details
-                                error_log( '[search-form] Response (truncated): ' . $trunc ); // log truncated response
+                                error_log( '[search-form] Response (truncated): ' . $trunc );
                             }
                             // Show inline diagnostics to logged-in admins to aid debugging (only when WP_DEBUG is enabled).
                             if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'current_user_can' ) && current_user_can( 'manage_options' ) ) { // if admin
-                                echo '<div style="background:#fff;border:1px solid #ccc;padding:10px;margin:10px 0;">'; // Display error details
+                                echo '<div style="background:#fff;border:1px solid #ccc;padding:10px;margin:10px 0;">';
                                 echo '<strong>Search Form debug — response could not be parsed as XML</strong>';
                                 echo '<p>HTTP code: ' . intval( $code ) . ' — Content-Type: ' . esc_html( $content_type ) . '</p>';
                                 echo '<pre style="white-space:pre-wrap;max-height:400px;overflow:auto">' . esc_html( substr( $body, 0, 16384 ) ) . '</pre>';
@@ -103,46 +103,46 @@ function search_form_shortcode() {
                     }
                     
                     $items = array(); // build a normalized array of SimpleXMLElement items
-                    if ( isset( $xml->channel->item ) ) { // if items exist under channel
-                        foreach ( $xml->channel->item as $it ) { // iterate through each item
-                            $items[] = $it; // add item to array
+                    if ( isset( $xml->channel->item ) ) { 
+                        foreach ( $xml->channel->item as $it ) {
+                            $items[] = $it;
                         }
                     }
 
-                    if ( empty( $items ) ) { // if no items are found under channel
-                        $xpath_items = $xml->xpath('//item'); // find items using xpath
-                        if ( $xpath_items && count( $xpath_items ) ) { // if found
-                            $items = $xpath_items; // set items to xpath results
+                    if ( empty( $items ) ) { // if no items are found under channel, find items using xpath
+                        $xpath_items = $xml->xpath('//item');
+                        if ( $xpath_items && count( $xpath_items ) ) { 
+                            $items = $xpath_items; 
                         }
                     }
 
-                    echo '<h2>Search Results for:   ' . esc_html( $search_term ) . '</h2>'; // display search term as heading
-                    if ( ! empty( $items ) ) { // if there are items
-                        echo '<ul class="search-results">'; // start results list
+                    echo '<h2>Search Results for:   ' . esc_html( $search_term ) . '</h2>';
+                    if ( ! empty( $items ) ) { 
+                        echo '<ul class="search-results">';
                         foreach ( $items as $item ) {
-                            if ( is_object( $item ) && isset( $item->link ) ) { // ensure there is an object with children before accessing properties
-                                $link  = (string) $item->link; // get link as string
-                                $title = (string) $item->title; // get title as string
-                                echo '<li><a href="' . esc_url( $link ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $title ) . '</a></li>'; // display the result as a link
+                            if ( is_object( $item ) && isset( $item->link ) ) {
+                                $link  = (string) $item->link; 
+                                $title = (string) $item->title; 
+                                echo '<li><a href="' . esc_url( $link ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $title ) . '</a></li>';
                             } else { // log non-object or missing link entries
-                                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { // log if debugging is enabled
-                                    error_log( '[search-form] Skipping non-object <item> entry: ' . wp_trim_words( maybe_serialize( $item ), 30, '...' ) ); // log the skipped item
+                                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { 
+                                    error_log( '[search-form] Skipping non-object <item> entry: ' . wp_trim_words( maybe_serialize( $item ), 30, '...' ) );
                                 }
                                 continue;
                             }
                         }
-                        echo '</ul>'; // end results list
-                    } else { // no items found
-                        echo '<p>No results found.</p>'; // display no results message
-                        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { // if debugging is enabled
-                            error_log( '[search-form] No <item> found. Payload (truncated): ' . substr( $body, 0, 8192 ) ); // log no items found
+                        echo '</ul>';
+                    } else { 
+                        echo '<p>No results found.</p>';
+                        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                            error_log( '[search-form] No <item> found. Payload (truncated): ' . substr( $body, 0, 8192 ) );
                         }
                     }
                 }
             }
         }
     } else {
-        echo '<p id="search-prompt">Please enter a search term above to search Google News.</p>'; // prompt user to enter a search term
+        echo '<p id="search-prompt">Please enter a search term above to search Google News.</p>';
     }
 
     return ob_get_clean(); // return the buffered output
