@@ -32,7 +32,7 @@ function search_form_shortcode() {
 
         // Ensure there is a search term before making the API request to avoid empty requests.
     if ( ! empty( $search_term ) ) {
-        $API_url = 'https://news.google.com/rss/search?q=' . rawurlencode( $search_term ) . '&hl=en-US&gl=US&ceid=US:en';
+        $API_url = 'https://news.google.com/rss/news?q=' . rawurlencode( $search_term ) . '&output=rss';
 
         $args = array( // add a user-agent and timeout to the request for better compatibility and reliability
             'timeout'    => 10,
