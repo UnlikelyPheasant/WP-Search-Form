@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Search Form
- * Description: Search form that searches Google News RSS feed and displays results as title links and short descriptions.
+ * Description: Search form that searches Google News XML/RSS feed and displays results as title links
  * Version: 1.0.0
  * Author: Ash Burks
  * Author URI: https://unlikelypheasant.github.io/Ash.Burks.github.io/
@@ -154,7 +154,7 @@ function search_css() {
     echo '<style type="text/css">'
         . 'h1 {
             font-family: monospace, monospace;
-            color: #6d350eff;
+            color: #000000;
             text-align: center;
             margin-bottom: 20px;
             font-size: 42px;
@@ -177,7 +177,7 @@ function search_css() {
             font-family: monospace, monospace;
             padding: 12px;
             font-size: 20px;
-            background-color: #B69078;
+            background-color: #c99f85ff;
             border: 1px solid #7B3D10;
             box-shadow: 0px 2px 7px 1px #7B3D10;
         }' 
